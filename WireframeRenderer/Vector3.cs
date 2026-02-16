@@ -13,6 +13,13 @@ public struct Vector3
         this.z = z;
     }
 
+    public Vector3(float[] values)
+    {
+        this.x = values[0];
+        this.y = values[1];
+        this.z = values[2];
+    }
+
     public Vector3 Normalize()
     {
         return this / Magnitude();
@@ -41,5 +48,10 @@ public struct Vector3
     public static Vector3 operator /(Vector3 a, float b)
     {
         return new Vector3(a.x / b, a.y / b, a.z / b);
+    }
+
+    public override string ToString()
+    {
+        return $"({x}, {y}, {z})";
     }
 }
