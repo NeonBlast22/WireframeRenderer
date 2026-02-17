@@ -16,6 +16,26 @@ public struct Matrix4X4
         
     }
     
+    public static Matrix4X4 operator *(Matrix4X4 a, Matrix4X4 b)
+    {
+        Matrix4X4 result = new Matrix4X4();
+
+        for (int col = 0; col < 4; col++)
+        {
+            for (int row = 0; row < 4; row++)
+            {
+                float sum = 0f;
+                for (int i = 0; i < 4; i++)
+                {
+                    sum += a.M[i, row] * b.M[col, i];
+                }
+                result.M[col, row] = sum;
+            }
+        }
+
+        return result;
+    }
+    
     public static Matrix4X4 FromRotation(float xRotation, float yRotation, float zRotation)
     {
         Matrix4X4 result = new Matrix4X4();
