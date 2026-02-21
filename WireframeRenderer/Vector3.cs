@@ -54,4 +54,17 @@ public struct Vector3
     {
         return $"({x}, {y}, {z})";
     }
+    
+    public override bool Equals(object obj)
+    {
+        if (obj is Vector3 other)
+            return x == other.x && y == other.y && z == other.z;
+        return false;
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(x, y, z);
+    }
+    
 }

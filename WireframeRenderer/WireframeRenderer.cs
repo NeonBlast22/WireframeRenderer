@@ -2,26 +2,27 @@ namespace WireframeRenderer;
 
 public static class WireframeRenderer
 {
-    public static int screenWidth = 1280;
-    public static int screenHeight = 720;
+    public static int screenWidth = 2650;
+    public static int screenHeight = 1600;
     private const float FOV = 2;
 
-    private static WireframeModel cube;
+    private static WireframeModel model;
     
     static int Main()
     {
         Screen.OnStart += Start;
         Screen.OnUpdate += Update;
         
-        Screen.Initialize(screenWidth, screenHeight, "WireframeRenderer");
+        STLLoader.LoadStl();
         
+        Screen.Initialize(screenWidth, screenHeight, "WireframeRenderer");
         return 0;
     }
 
     static void Start()
     {
         Screen.ClearScreen();
-
+        /*
         Vector3[] vertices = new Vector3[]
         {
             new Vector3(-1, -1, -1),
@@ -52,8 +53,10 @@ public static class WireframeRenderer
             6, 7,
             7, 4,
         };
+        model = new WireframeModel(vertices, connections);
+        */
         
-        cube = new WireframeModel(vertices, connections);
+        model = new WireframeModel(STLLoader.Vertices, STLLoader.Edges);
     }
 
     private static float yaw = 0f;
@@ -61,12 +64,13 @@ public static class WireframeRenderer
     {
         Screen.ClearScreen();
         yaw += (float)deltaTime;
-        Matrix4X4 rotation = Matrix4X4.FromRotation(0f, yaw, 0f);
-        Matrix4X4 translation = Matrix4X4.FromTranslation(0f, 0f, 10f);
+        Matrix4X4 correction = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
+        Matrix4X4 rotation = Matrix4X4.FromRotation(0.0f, yaw, 0f);
+        Matrix4X4 translation = Matrix4X4.FromTranslation(0f, 2f, 10f);
+        Color color = new  Color((MathF.Sin(yaw * 2) + 1) / 2, (MathF.Sin((yaw + (2f/3f) * MathF.PI) * 2) + 1) / 2, (MathF.Sin((yaw + (1f/3f) * MathF.PI) * 2) * 2 + 1) / 2);
+        RenderWireframe(model, translation * (rotation * correction), color);
         
-        RenderWireframe(cube, translation * rotation);
-        
-        Console.WriteLine($"FPS: {Math.Round(1f / deltaTime, 1)}");
+        //Console.WriteLine($"FPS: {Math.Round(1f / deltaTime, 1)}");
     }
 
     static Vector2 ProjectCameraToClipspace(Vector3 vertexPosition)
@@ -111,7 +115,7 @@ public static class WireframeRenderer
         }
     }
 
-    static void RenderWireframe(WireframeModel model, Matrix4X4 transformation)
+    static void RenderWireframe(WireframeModel model, Matrix4X4 transformation, Color color)
     {
         Vector2[] clipSpaceVertexCoordinates = new Vector2[model.vertices.Length];
         for (int vertexIndex = 0; vertexIndex < model.vertices.Length; vertexIndex++)
@@ -127,7 +131,7 @@ public static class WireframeRenderer
             
             PixelCoordinate startCoord = new PixelCoordinate(clipSpaceVertexCoordinates[startVertexIndex]);
             PixelCoordinate endCoord = new PixelCoordinate(clipSpaceVertexCoordinates[endVertexIndex]);
-            DrawLine(startCoord, endCoord, new Color(1, 1, 1));
+            DrawLine(startCoord, endCoord, color);
         }
     }
     

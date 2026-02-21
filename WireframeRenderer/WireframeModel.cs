@@ -10,4 +10,15 @@ public class WireframeModel
         this.vertices = vertices;
         this.connections = connections;
     }
+    
+    public WireframeModel(Vector3[] vertices, (int, int)[] connections)
+    {
+        this.vertices = vertices;
+        this.connections = new  int[connections.Length * 2];
+        for (int i = 0; i < connections.Length * 2; i += 2)
+        {
+            this.connections[i] = connections[i / 2].Item1;
+            this.connections[i + 1] = connections[i / 2].Item2;
+        }
+    }
 }
