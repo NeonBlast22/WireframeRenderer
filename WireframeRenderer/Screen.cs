@@ -2,6 +2,7 @@
 using Silk.NET.Windowing;
 using Silk.NET.OpenGL;
 using Silk.NET.Maths;
+using Silk.NET.Input;
 
 namespace WireframeRenderer;
 
@@ -38,13 +39,18 @@ public static class Screen
     private static byte[] pixels;
     private static int _width;
     private static int _height;
+    private static IInputContext input;
     
     
     public delegate void UpdateEvent(double deltaTime);
     public delegate void StartEvent();
     
+    public delegate void KeyEvent(Key key);
+    
     public static event UpdateEvent? OnUpdate;
     public static event StartEvent? OnStart;
+    
+    public static event KeyEvent? OnKeyEvent;
 
     public static void Initialize(int width, int height, string title)
     {
@@ -56,15 +62,26 @@ public static class Screen
         options.UpdatesPerSecond = 0;
         _width = width;
         _height = height;
-        
+
         window = Window.Create(options);
-        
+
         window.Load += OnLoad;
         window.Render += OnRender;
         window.Closing += OnClose;
         
         window.Run();
     }
+
+    public static bool GetKey(Key key)
+    {
+        for (int i = 0; i < input.Keyboards.Count; i++)
+        {
+            if (input.Keyboards[i].IsKeyPressed(key)) return true;
+        }
+
+        return false;
+    }
+    
 
     private static void OnLoad()
     {
@@ -231,6 +248,7 @@ public static class Screen
 
     private static void Start()
     {
+        input = window.CreateInput();
         OnStart?.Invoke();
     }
     

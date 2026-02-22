@@ -1,3 +1,5 @@
+using Silk.NET.Input;
+
 namespace WireframeRenderer;
 
 public static class WireframeRenderer
@@ -7,6 +9,10 @@ public static class WireframeRenderer
     private const float FOV = 2;
 
     private static WireframeModel model;
+    
+    private static Matrix4X4 rotationMatrix;
+    private static Matrix4X4 modelTranslation;
+    private static float scale = 1f;
     
     static int Main()
     {
@@ -22,6 +28,10 @@ public static class WireframeRenderer
     static void Start()
     {
         Screen.ClearScreen();
+
+        rotationMatrix = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
+        modelTranslation = Matrix4X4.FromTranslation(0f, 0f, 5f);
+        
         /*
         Vector3[] vertices = new Vector3[]
         {
@@ -63,12 +73,23 @@ public static class WireframeRenderer
     static void Update(double deltaTime)
     {
         Screen.ClearScreen();
-        yaw += (float)deltaTime;
-        Matrix4X4 correction = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
-        Matrix4X4 rotation = Matrix4X4.FromRotation(0.0f, yaw, 0f);
-        Matrix4X4 translation = Matrix4X4.FromTranslation(0f, 2f, 10f);
-        Color color = new  Color((MathF.Sin(yaw * 2) + 1) / 2, (MathF.Sin((yaw + (2f/3f) * MathF.PI) * 2) + 1) / 2, (MathF.Sin((yaw + (1f/3f) * MathF.PI) * 2) * 2 + 1) / 2);
-        RenderWireframe(model, translation * (rotation * correction), color);
+        
+        if (Screen.GetKey(Key.S)) rotationMatrix = Matrix4X4.FromRotation((float)deltaTime, 0f, 0f) * rotationMatrix;
+        if (Screen.GetKey(Key.W)) rotationMatrix = Matrix4X4.FromRotation((float)-deltaTime, 0f, 0f) * rotationMatrix;
+        
+        if (Screen.GetKey(Key.A)) rotationMatrix = Matrix4X4.FromRotation(0f, (float)deltaTime, 0f) * rotationMatrix;
+        if (Screen.GetKey(Key.D)) rotationMatrix = Matrix4X4.FromRotation(0f, (float)-deltaTime, 0f) * rotationMatrix;
+        
+        if (Screen.GetKey(Key.Q)) rotationMatrix = Matrix4X4.FromRotation(0f, 0f, (float)-deltaTime) * rotationMatrix;
+        if (Screen.GetKey(Key.E)) rotationMatrix = Matrix4X4.FromRotation(0f, 0f, (float)deltaTime) * rotationMatrix;
+        
+        if (Screen.GetKey(Key.R)) rotationMatrix = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
+        
+        if (Screen.GetKey(Key.Z)) scale *= 1f + (float)deltaTime * 1.5f;
+        if (Screen.GetKey(Key.X)) scale /= 1f + (float)deltaTime * 1.5f;
+        
+        Color color = new Color(1f, 1f, 1);
+        RenderWireframe(model, modelTranslation * (scale * rotationMatrix), color);
         
         //Console.WriteLine($"FPS: {Math.Round(1f / deltaTime, 1)}");
     }

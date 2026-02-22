@@ -102,6 +102,16 @@ public struct Matrix4X4
         return FromTranslation(translation.x, translation.y, translation.z);
     }
 
+    public static Matrix4X4 FromScale(float scale)
+    {
+        Matrix4X4 result = new Matrix4X4();
+        result.M[0, 0] = scale;
+        result.M[1, 1] = scale;
+        result.M[2, 2] = scale;
+        result.M[3, 3] = scale;
+        return result;
+    }
+
     public static Vector3 operator *(Vector3 v, Matrix4X4 m)
     {
         Vector3 transformed = new Vector3(MultiplyWithCollum(v.x, m.GetColumn(0)));
@@ -110,6 +120,23 @@ public struct Matrix4X4
         transformed += new Vector3(MultiplyWithCollum(1, m.GetColumn(3))); //4th axis is one always
 
         return transformed;
+    }
+
+    public static Matrix4X4 operator *(float scale, Matrix4X4 m)
+    {
+        Matrix4X4 result = new Matrix4X4();
+        for (int collum = 0; collum < 4; collum++)
+        {
+            for (int row = 0; row < 4; row++)
+            {
+                if (row < 4 && collum < 4)
+                {
+                    result.M[collum, row] = m.M[collum, row] *  scale;
+                }
+                else result.M[collum, row] = m.M[collum, row];
+            }
+        }
+        return result;
     }
 
     static float[] MultiplyWithCollum(float scalar, float[] collum)
