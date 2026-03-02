@@ -35,6 +35,7 @@ public static class WireframeRenderer
     private static float t = 0f;
     static bool wasNpressedLastFrame = false;
     static bool wasBpressedLastFrame = false;
+    static bool wasVpressedLastFrame = false;
     static void Update(double deltaTime)
     {
         Screen.ClearScreen();
@@ -79,12 +80,18 @@ public static class WireframeRenderer
             if (modelIndex < 0) modelIndex = STLLoader.models.Count - 1;
         }
         
+        if (Screen.GetKey(Key.V) && !wasVpressedLastFrame)
+        {
+            STLLoader.OpenModelFolder();
+        }
+        
         Color color = Color.FromHSV(t * 180, 1f, 1f); 
         RenderWireframe(STLLoader.models[modelIndex], modelTranslation * (Matrix4X4.FromScale(scale) * rotationMatrix), color);
 
         t += (float)deltaTime;
         wasBpressedLastFrame = Screen.GetKey(Key.B);
         wasNpressedLastFrame = Screen.GetKey(Key.N);
+        wasVpressedLastFrame = Screen.GetKey(Key.V);
     }
 
     static Vector2 ProjectCameraToClipspace(Vector3 vertexPosition)

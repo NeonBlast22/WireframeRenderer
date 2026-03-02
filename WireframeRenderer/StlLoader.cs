@@ -56,8 +56,18 @@ static class STLLoader
 
     private static Vector3 ReadVector3(BinaryReader r) =>
         new Vector3(r.ReadSingle(), r.ReadSingle(), r.ReadSingle());
-    
 
+    public static void OpenModelFolder()
+    {
+        string dir = AppDomain.CurrentDomain.BaseDirectory + "/Models";
+        var processStartInfo = new System.Diagnostics.ProcessStartInfo
+        {
+            FileName = dir,
+            UseShellExecute = true
+        };
+        System.Diagnostics.Process.Start(processStartInfo);
+    }
+    
     private static void LoadAsciiStl(string filePath)
     {
         var triangles = new List<Triangle>();
@@ -173,7 +183,7 @@ static class STLLoader
     public static void LoadStl()
     {
         // Find the first .stl file in the same directory as the executable
-        string dir = AppDomain.CurrentDomain.BaseDirectory;
+        string dir = AppDomain.CurrentDomain.BaseDirectory + "/Models";
         string[] stlFiles = Directory.GetFiles(dir, "*.stl");
 
         if (stlFiles.Length == 0)
