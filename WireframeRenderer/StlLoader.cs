@@ -7,14 +7,14 @@ using System.Linq;
 
 static class STLLoader
 {
+    public static List<WireframeModel> models;
+    
     public struct Triangle
     {
         public Vector3 Normal;
         public Vector3[] Vertices; // 3 vertices
     }
-
-    public static Vector3[] Vertices { get; private set; }
-    public static (int, int)[] Edges { get; private set; }
+    
     public static Triangle[] Triangles { get; private set; }
 
     public static void Load(string filePath)
@@ -125,9 +125,28 @@ static class STLLoader
             edges.Add((Math.Min(b, c), Math.Max(b, c)));
             edges.Add((Math.Min(a, c), Math.Max(a, c)));
         }
-
-        Vertices = vertexList.ToArray();
-        Edges = edges.ToArray();
+        
+        Vector3 center = new Vector3(0f, 0f, 0f);
+        
+        foreach (Vector3 v in vertexList)
+        {
+            center += v;
+        }
+        center /= vertexList.Count;
+        float maxZ = 0;
+        for(int i = 0; i < vertexList.Count; i++)
+        {
+            vertexList[i] = vertexList[i] -  center;
+            if (vertexList[i].z > maxZ)  maxZ = vertexList[i].z;
+        }
+        
+        for(int i = 0; i < vertexList.Count; i++)
+        {
+            vertexList[i] = vertexList[i] / maxZ;
+        }
+        
+        WireframeModel model = new WireframeModel(vertexList.ToArray(),  edges.ToArray());
+        models.Add(model);
     }
     
     private static bool IsBinaryStl(string filePath)
@@ -163,11 +182,11 @@ static class STLLoader
             return;
         }
 
-        string filePath = stlFiles[0];
-        Console.WriteLine($"Loading: {filePath}\n");
-        Load(filePath);
-        
-        Console.WriteLine($"Vertices  : {Vertices.Length}");
-        Console.WriteLine($"Edges     : {Edges.Length}");
+        models = new List<WireframeModel>();
+        foreach (string path in stlFiles)
+        {
+            Console.WriteLine($"Loading: {path}\n");
+            Load(path);
+        }
     }
 }

@@ -28,6 +28,30 @@ public struct Color
         B = b;
         A = 1.0f;
     }
+    
+    public static Color FromHSV(float h, float s, float v, float a = 1.0f)
+    {
+        // Clamp inputs
+        h = h % 360f;
+        if (h < 0) h += 360f;
+        s = Math.Clamp(s, 0f, 1f);
+        v = Math.Clamp(v, 0f, 1f);
+
+        float c = v * s;                    // Chroma
+        float x = c * (1f - MathF.Abs((h / 60f) % 2f - 1f));
+        float m = v - c;
+
+        float r, g, b;
+
+        if      (h < 60f)  { r = c; g = x; b = 0; }
+        else if (h < 120f) { r = x; g = c; b = 0; }
+        else if (h < 180f) { r = 0; g = c; b = x; }
+        else if (h < 240f) { r = 0; g = x; b = c; }
+        else if (h < 300f) { r = x; g = 0; b = c; }
+        else               { r = c; g = 0; b = x; }
+
+        return new Color(r + m, g + m, b + m, a);
+    }
 }
 public static class Screen
 {
@@ -40,6 +64,8 @@ public static class Screen
     private static int _width;
     private static int _height;
     private static IInputContext input;
+    private static bool _resizePending = false;
+    private static Vector2D<int> _pendingSize;
     
     
     public delegate void UpdateEvent(double deltaTime);
@@ -68,6 +94,8 @@ public static class Screen
         window.Load += OnLoad;
         window.Render += OnRender;
         window.Closing += OnClose;
+        
+        window.FramebufferResize += OnFramebufferResize;
         
         window.Run();
     }
@@ -211,6 +239,30 @@ public static class Screen
 
     private static void OnRender(double deltaTime)
     {
+        if (_resizePending)
+        {
+            _resizePending = false;
+        
+            _width = _pendingSize.X;
+            _height = _pendingSize.Y;
+        
+            pixels = new byte[_width * _height * 4];
+        
+            gl.Viewport(_pendingSize);
+            gl.BindTexture(TextureTarget.Texture2D, texture);
+            unsafe
+            {
+                fixed (byte* ptr = pixels)
+                {
+                    gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba,
+                        (uint)_width, (uint)_height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, ptr);
+                }
+            }
+        
+            WireframeRenderer.screenWidth = _width;
+            WireframeRenderer.screenHeight = _height;
+        } 
+        
         Update(deltaTime);
         
         gl.Clear(ClearBufferMask.ColorBufferBit);
@@ -255,5 +307,11 @@ public static class Screen
     private static void Update(double deltaTime)
     {
         OnUpdate?.Invoke(deltaTime);
+    }
+
+    private static void OnFramebufferResize(Vector2D<int> newSize)
+    {
+        _pendingSize = newSize;
+        _resizePending = true;
     }
 }

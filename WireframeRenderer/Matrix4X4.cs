@@ -108,7 +108,7 @@ public struct Matrix4X4
         result.M[0, 0] = scale;
         result.M[1, 1] = scale;
         result.M[2, 2] = scale;
-        result.M[3, 3] = scale;
+        result.M[3, 3] = 1;
         return result;
     }
 
@@ -125,17 +125,14 @@ public struct Matrix4X4
     public static Matrix4X4 operator *(float scale, Matrix4X4 m)
     {
         Matrix4X4 result = new Matrix4X4();
-        for (int collum = 0; collum < 4; collum++)
-        {
+        for (int col = 0; col < 4; col++)
             for (int row = 0; row < 4; row++)
-            {
-                if (row < 4 && collum < 4)
-                {
-                    result.M[collum, row] = m.M[collum, row] *  scale;
-                }
-                else result.M[collum, row] = m.M[collum, row];
-            }
-        }
+                result.M[col, row] = m.M[col, row];
+        
+        for (int col = 0; col < 3; col++)
+            for (int row = 0; row < 3; row++)
+                result.M[col, row] = m.M[col, row] * scale;
+
         return result;
     }
 

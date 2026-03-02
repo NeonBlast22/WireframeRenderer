@@ -7,12 +7,11 @@ public static class WireframeRenderer
     public static int screenWidth = 2650;
     public static int screenHeight = 1600;
     private const float FOV = 2;
-
-    private static WireframeModel model;
     
     private static Matrix4X4 rotationMatrix;
     private static Matrix4X4 modelTranslation;
     private static float scale = 1f;
+    private static int modelIndex = 0;
     
     static int Main()
     {
@@ -31,45 +30,11 @@ public static class WireframeRenderer
 
         rotationMatrix = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
         modelTranslation = Matrix4X4.FromTranslation(0f, 0f, 5f);
-        
-        /*
-        Vector3[] vertices = new Vector3[]
-        {
-            new Vector3(-1, -1, -1),
-            new Vector3(-1, -1, 1),
-            new Vector3(1, -1, 1),
-            new Vector3(1, -1, -1),
-            
-            new Vector3(-1, 1, -1),
-            new Vector3(-1, 1, 1),
-            new Vector3(1, 1, 1),
-            new Vector3(1, 1, -1)
-        };
-
-        int[] connections = new int[]
-        {
-            0, 1,
-            1, 2,
-            2, 3,
-            3, 0,
-            
-            0, 4,
-            1, 5,
-            2, 6,
-            3, 7,
-            
-            4, 5,
-            5, 6,
-            6, 7,
-            7, 4,
-        };
-        model = new WireframeModel(vertices, connections);
-        */
-        
-        model = new WireframeModel(STLLoader.Vertices, STLLoader.Edges);
     }
-
-    private static float yaw = 0f;
+    
+    private static float t = 0f;
+    static bool wasNpressedLastFrame = false;
+    static bool wasBpressedLastFrame = false;
     static void Update(double deltaTime)
     {
         Screen.ClearScreen();
@@ -82,20 +47,49 @@ public static class WireframeRenderer
         
         if (Screen.GetKey(Key.Q)) rotationMatrix = Matrix4X4.FromRotation(0f, 0f, (float)-deltaTime) * rotationMatrix;
         if (Screen.GetKey(Key.E)) rotationMatrix = Matrix4X4.FromRotation(0f, 0f, (float)deltaTime) * rotationMatrix;
-        
-        if (Screen.GetKey(Key.R)) rotationMatrix = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
+
+        if (Screen.GetKey(Key.R))
+        {
+            rotationMatrix = Matrix4X4.FromRotation(MathF.PI / 2, 0f, 0f);
+            scale = 1f;
+            modelTranslation = Matrix4X4.FromTranslation(0f, 0f, 5f);
+        }
         
         if (Screen.GetKey(Key.Z)) scale *= 1f + (float)deltaTime * 1.5f;
         if (Screen.GetKey(Key.X)) scale /= 1f + (float)deltaTime * 1.5f;
         
-        Color color = new Color(1f, 1f, 1);
-        RenderWireframe(model, modelTranslation * (scale * rotationMatrix), color);
+        if (Screen.GetKey(Key.I)) modelTranslation *= Matrix4X4.FromTranslation(0f, (float)-deltaTime, 0f);
+        if (Screen.GetKey(Key.K)) modelTranslation *= Matrix4X4.FromTranslation(0f, (float)deltaTime, 0f);
         
-        //Console.WriteLine($"FPS: {Math.Round(1f / deltaTime, 1)}");
+        if (Screen.GetKey(Key.J)) modelTranslation *= Matrix4X4.FromTranslation((float)-deltaTime, 0f, 0f);
+        if (Screen.GetKey(Key.L)) modelTranslation *= Matrix4X4.FromTranslation((float)deltaTime, 0f, 0f);
+
+        if (Screen.GetKey(Key.U)) modelTranslation *= Matrix4X4.FromTranslation(0f, 0f, (float)deltaTime);
+        if (Screen.GetKey(Key.O)) modelTranslation *= Matrix4X4.FromTranslation(0f, 0f, (float)-deltaTime);
+
+        if (Screen.GetKey(Key.N) && !wasNpressedLastFrame)
+        {
+            modelIndex++;
+            if (modelIndex >= STLLoader.models.Count) modelIndex = 0;
+        }
+
+        if (Screen.GetKey(Key.B) && !wasBpressedLastFrame)
+        {
+            modelIndex--;
+            if (modelIndex < 0) modelIndex = STLLoader.models.Count - 1;
+        }
+        
+        Color color = Color.FromHSV(t * 180, 1f, 1f); 
+        RenderWireframe(STLLoader.models[modelIndex], modelTranslation * (Matrix4X4.FromScale(scale) * rotationMatrix), color);
+
+        t += (float)deltaTime;
+        wasBpressedLastFrame = Screen.GetKey(Key.B);
+        wasNpressedLastFrame = Screen.GetKey(Key.N);
     }
 
     static Vector2 ProjectCameraToClipspace(Vector3 vertexPosition)
     {
+        if (vertexPosition.z < 0) vertexPosition.z = 0;
         float x = (vertexPosition.x * FOV) / (FOV + vertexPosition.z);
         float y = (vertexPosition.y * FOV) / (FOV + vertexPosition.z);
         Vector2 clip = new Vector2(x, y);
@@ -115,7 +109,7 @@ public static class WireframeRenderer
 
         while (true)
         {
-            Screen.SetPixel(x, y, color);
+            if (x > 0 && x < screenWidth && y > 0 && y < screenHeight)Screen.SetPixel(x, y, color);
 
             if (x == end.x && y == end.y)
                 break;
@@ -152,6 +146,10 @@ public static class WireframeRenderer
             
             PixelCoordinate startCoord = new PixelCoordinate(clipSpaceVertexCoordinates[startVertexIndex]);
             PixelCoordinate endCoord = new PixelCoordinate(clipSpaceVertexCoordinates[endVertexIndex]);
+            
+            if ((startCoord.x > screenWidth || startCoord.y > screenHeight || startCoord.x < 0 || startCoord.y < 0)
+                &&  (endCoord.x > screenWidth || endCoord.y > screenHeight || endCoord.x < 0 || endCoord.y < 0)) continue;
+            
             DrawLine(startCoord, endCoord, color);
         }
     }
