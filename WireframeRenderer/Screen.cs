@@ -67,6 +67,7 @@ public static class Screen
     private static bool _resizePending = false;
     private static Vector2D<int> _pendingSize;
     
+    private static TextRenderer? _textRenderer;
     
     public delegate void UpdateEvent(double deltaTime);
     public delegate void StartEvent();
@@ -219,6 +220,9 @@ public static class Screen
         }
         
         Start();
+        
+        string fontPath = Path.Combine(AppContext.BaseDirectory, "font.ttf");
+        _textRenderer = new TextRenderer(fontPath, 24f);
     }
 
     public static void SetPixel(int x, int y, Color color)
@@ -230,6 +234,11 @@ public static class Screen
         pixels[index + 1] = (byte)(color.G * 255);
         pixels[index + 2] = (byte)(color.B * 255);
         pixels[index + 3] = (byte)(color.A * 255);
+    }
+    
+    public static void DrawText(string text, int x, int y, Color color)
+    {
+        _textRenderer?.DrawText(text, x, y, color);
     }
 
     public static void ClearScreen()
@@ -290,6 +299,8 @@ public static class Screen
 
     private static void OnClose()
     {
+        _textRenderer?.Dispose();
+        
         gl.DeleteTexture(texture);
         gl.DeleteVertexArray(vao);
         gl.DeleteBuffer(vbo);

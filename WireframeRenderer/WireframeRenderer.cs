@@ -8,22 +8,46 @@ public static class WireframeRenderer
     public static int screenHeight = 1600;
     private const float FOV = 2;
     
+    // Model Data
     private static Matrix4X4 rotationMatrix;
     private static Matrix4X4 modelTranslation;
     private static float scale = 1f;
     private static int modelIndex = 0;
     
+    private static bool hasErrorOccurred = false;
+    private static string errorMessage = "";
+    
+    // Inital Program Setup
     static int Main()
     {
         Screen.OnStart += Start;
         Screen.OnUpdate += Update;
         
         STLLoader.LoadStl();
+
+        if (STLLoader.errorState != STLLoader.ErrorState.None)
+        {
+            hasErrorOccurred = true;
+            switch (STLLoader.errorState)
+            {
+                case STLLoader.ErrorState.NotLoaded:
+                    errorMessage = "Error: Model Failed to load for unknown reason\nRestart Program";
+                    break;
+                case STLLoader.ErrorState.InvalidModel:
+                    errorMessage = "Error: Model File Is corrupt or invalid\nUse a different model";
+                    break;
+                case STLLoader.ErrorState.MissingModelFiles:
+                    errorMessage =
+                        "Error: No model files were located\nPlace stl files in the model directory, found by pressing V";
+                    break;
+            }
+        }
         
         Screen.Initialize(screenWidth, screenHeight, "WireframeRenderer");
         return 0;
     }
 
+    // Render Preperations
     static void Start()
     {
         Screen.ClearScreen();
@@ -32,14 +56,22 @@ public static class WireframeRenderer
         modelTranslation = Matrix4X4.FromTranslation(0f, 0f, 5f);
     }
     
+    // Update affected varriables
     private static float t = 0f;
+    private static bool showHelp = true;
+    private static bool colorMode = true;
     static bool wasNpressedLastFrame = false;
     static bool wasBpressedLastFrame = false;
     static bool wasVpressedLastFrame = false;
+    static bool wasHpressedLastFrame = false;
+    static bool wasCpressedLastFrame = false;
+    
+    // Update is called every frame
     static void Update(double deltaTime)
     {
         Screen.ClearScreen();
         
+        //Perform input checking
         if (Screen.GetKey(Key.S)) rotationMatrix = Matrix4X4.FromRotation((float)deltaTime, 0f, 0f) * rotationMatrix;
         if (Screen.GetKey(Key.W)) rotationMatrix = Matrix4X4.FromRotation((float)-deltaTime, 0f, 0f) * rotationMatrix;
         
@@ -84,16 +116,41 @@ public static class WireframeRenderer
         {
             STLLoader.OpenModelFolder();
         }
-        
-        Color color = Color.FromHSV(t * 180, 1f, 1f); 
-        RenderWireframe(STLLoader.models[modelIndex], modelTranslation * (Matrix4X4.FromScale(scale) * rotationMatrix), color);
 
+        if (Screen.GetKey(Key.H) && !wasHpressedLastFrame)
+        {
+            showHelp = !showHelp;
+        }
+
+        if (Screen.GetKey(Key.C) && !wasCpressedLastFrame)
+        {
+            colorMode = !colorMode;
+        }
+        
+        //Aquire color and render wireframe
+        Color color;
+        if (colorMode) color = Color.FromHSV(t * 180, 1f, 1f);
+        else color = Color.FromHSV(0, 0, 1);
+        
+        if (!hasErrorOccurred) RenderWireframe(STLLoader.models[modelIndex], modelTranslation * (Matrix4X4.FromScale(scale) * rotationMatrix), color);
+        else
+        {
+            Screen.DrawText(errorMessage, 400, 200, new Color(1.0f, 0.1f, 0.1f));
+        }
+        
+        if (showHelp) DrawHelpMenu();
+        
+        //Update frame variables
+        
         t += (float)deltaTime;
         wasBpressedLastFrame = Screen.GetKey(Key.B);
         wasNpressedLastFrame = Screen.GetKey(Key.N);
         wasVpressedLastFrame = Screen.GetKey(Key.V);
+        wasHpressedLastFrame = Screen.GetKey(Key.H);
+        wasCpressedLastFrame = Screen.GetKey(Key.C);
     }
-
+    
+    //Clipspace is from x -1 to 1 and y -1 to 1 and is used before converting to pixel coordinates
     static Vector2 ProjectCameraToClipspace(Vector3 vertexPosition)
     {
         if (vertexPosition.z < 0) vertexPosition.z = 0;
@@ -102,7 +159,8 @@ public static class WireframeRenderer
         Vector2 clip = new Vector2(x, y);
         return clip;
     }
-
+    
+    //Bresenham's line algorithm implementation
     static void DrawLine(PixelCoordinate start, PixelCoordinate end, Color color)
     {
         int dx = Math.Abs(end.x - start.x);
@@ -139,13 +197,14 @@ public static class WireframeRenderer
 
     static void RenderWireframe(WireframeModel model, Matrix4X4 transformation, Color color)
     {
+        //Convert verticies to clipspace
         Vector2[] clipSpaceVertexCoordinates = new Vector2[model.vertices.Length];
         for (int vertexIndex = 0; vertexIndex < model.vertices.Length; vertexIndex++)
         {
             Vector3 transformedVertex = model.vertices[vertexIndex] * transformation;
             clipSpaceVertexCoordinates[vertexIndex] = ProjectCameraToClipspace(transformedVertex);
         }
-
+        //Run line algorithm for all edges
         for (int connectionIndex = 0; connectionIndex < model.connections.Length; connectionIndex+= 2)
         {
             int startVertexIndex = model.connections[connectionIndex];
@@ -159,6 +218,32 @@ public static class WireframeRenderer
             
             DrawLine(startCoord, endCoord, color);
         }
+    }
+    //Displays paragraph in top left
+    static void DrawHelpMenu()
+    {
+        string[] binds = new[]
+        {
+            "H - Toggle Help",
+            "B - Previous Model",
+            "N - Next Model",
+            "V - Open Model Folder",
+            "R - Reset Transformations",
+            "C - Toggle Color",
+            "Z / X - Scale Model",
+            "Q / E - Roll Model",
+            "A / D - YAW Model",
+            "W / S - Pitch Model",
+            "J / L - Translate Model Horizontal",
+            "I / K - Translate Model Vertical",
+            "U / O - Translate Model Depth",
+            
+        };
+        for (int i = 0; i < binds.Length; i++)
+        {
+            Screen.DrawText(binds[i], 10, 36 * i + 8, new Color(1f, 1f, 1f));
+        }
+        
     }
     
 }

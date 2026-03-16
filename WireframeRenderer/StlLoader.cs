@@ -8,6 +8,14 @@ using System.Linq;
 static class STLLoader
 {
     public static List<WireframeModel> models;
+
+    public enum ErrorState
+    {
+        None,
+        InvalidModel,
+        MissingModelFiles,
+        NotLoaded
+    }
     
     public struct Triangle
     {
@@ -16,7 +24,9 @@ static class STLLoader
     }
     
     public static Triangle[] Triangles { get; private set; }
-
+    
+    public static ErrorState errorState = ErrorState.NotLoaded;
+    
     public static void Load(string filePath)
     {
         // Detect if binary or ASCII STL
@@ -106,7 +116,7 @@ static class STLLoader
 
         Triangles = triangles.ToArray();
     }
-
+    //Converts tris to edges and vertices
     private static void BuildVerticesAndEdges()
     {
         var vertexMap = new Dictionary<Vector3, int>();
@@ -155,6 +165,7 @@ static class STLLoader
             vertexList[i] = vertexList[i] / maxZ;
         }
         
+        
         WireframeModel model = new WireframeModel(vertexList.ToArray(),  edges.ToArray());
         models.Add(model);
     }
@@ -184,19 +195,34 @@ static class STLLoader
     {
         // Find the first .stl file in the same directory as the executable
         string dir = AppDomain.CurrentDomain.BaseDirectory + "/Models";
-        string[] stlFiles = Directory.GetFiles(dir, "*.stl");
 
+        if (!System.IO.Directory.Exists(dir))
+        {
+            System.IO.Directory.CreateDirectory(dir);
+        }
+        string[] stlFiles = Directory.GetFiles(dir, "*.stl");
         if (stlFiles.Length == 0)
         {
             Console.WriteLine("No .stl file found in the application directory.");
+            errorState = ErrorState.MissingModelFiles;
             return;
         }
 
-        models = new List<WireframeModel>();
-        foreach (string path in stlFiles)
+        try
         {
-            Console.WriteLine($"Loading: {path}\n");
-            Load(path);
+            models = new List<WireframeModel>();
+            foreach (string path in stlFiles)
+            {
+                Console.WriteLine($"Loading: {path}\n");
+                Load(path);
+            }
         }
+        catch (Exception e)
+        {
+            errorState = ErrorState.InvalidModel;
+        }
+        
+        
+        if (errorState == ErrorState.NotLoaded) errorState = ErrorState.None;
     }
 }

@@ -1,5 +1,6 @@
 namespace WireframeRenderer;
 
+//Represents a 4d affine transformation
 public struct Matrix4X4
 {
     //Collum, Row (it looks opposite here)

@@ -1,5 +1,6 @@
 namespace WireframeRenderer;
 
+//Represents a 2d real floating point in space
 public struct Vector2
 {
     public float x;

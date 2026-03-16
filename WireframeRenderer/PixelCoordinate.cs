@@ -1,5 +1,6 @@
 namespace WireframeRenderer;
 
+//Represents screen pixel coordinates
 public class PixelCoordinate
 {
     public int x;

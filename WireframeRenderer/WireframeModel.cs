@@ -1,5 +1,6 @@
 namespace WireframeRenderer;
 
+//Represents a collection of vertices connected by edges
 public class WireframeModel
 {
     public Vector3[] vertices;
